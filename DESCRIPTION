@@ -1,0 +1,22 @@
+Package: lab5
+Type: Package
+Title: Utilization of API and deployment of WebApp using Shiny package
+Version: 1.0
+Date: 2024-10-08
+Author: Christian Kammerer, Victor Guillo
+Maintainer: Christian Kammerer <chrka821@student.liu.se>
+Description: This package uses the Kolada API to access data regarding Swedish municipalities
+  and presents it to the user in a WebApp interface through the Shiny R package.
+License: GPL-3 + file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+Requires:
+  R >= 3.5.0
+Depends:
+  httr,
+  jsonlite,
+  R6
+Suggests: 
+    testthat (>= 3.0.0),
+    devtools
+Config/testthat/edition: 3
