@@ -4,15 +4,13 @@
 #' @importFrom sf st_read
 #' @importFrom dplyr inner_join
 #' @importFrom plotly ggplotly
+#' @importFrom ggplot2 ggplot
+
+#' @title Kolada Handler
+#' @description An R6 class to handle data retrieval from Kolada API
+#' @export
 kolada_handler <- R6Class("kolada_handler",
                        public = list(
-                       
-                       #' @description
-                       #' Constructor function for the kolada handler
-                       #' Takes no arguments as there is no requirement for an API key
-                       #' All calls to the API endpoints are made through a kolada_handler instance.
-                       #' @return A kolada_handler object which interacts with the API endpoints
-                       #' @export
                        initialize = function(){
                          
                        },
@@ -45,7 +43,7 @@ kolada_handler <- R6Class("kolada_handler",
                        #' @description
                        #' Function that retrieves all information for a specific municipality
                        #' @param municipality_id integer id as used by kolada and retrieved by parse_municipality method
-                       #' @@return Information regarding municipality
+                       #' @return Information regarding municipality
                        get_municipality = function(municipality_id){
                          endpoint = "https://api.kolada.se/v2/data/municipality/"
                          response <- GET(paste0(endpoint, municipality_id))
@@ -53,6 +51,10 @@ kolada_handler <- R6Class("kolada_handler",
                          return(data)
                        },
                        
+                       #' @description
+                       #' Takes a search string for a KPI and queries Kolada for it
+                       #' @param kpi_string Search query for desired KPI
+                       #' @return list of KPIs that include the KPI ID
                        parse_kpi = function(kpi_string){
                          endpoint = "http://api.kolada.se/v2/kpi?title="
                          response <- GET(paste0(endpoint, kpi_string))
@@ -60,6 +62,9 @@ kolada_handler <- R6Class("kolada_handler",
                          return(data)
                        },
                        
+                       #' @description
+                       #' Takes a KPI ID and queries Kolada for it
+                       #' @param kpi_id KPI ID as used by Kolada
                        get_kpi = function(kpi_id){
                          endpoint = "http://api.kolada.se/v2/data/kpi/"
                          print(paste0(endpoint, kpi_id))
@@ -70,25 +75,47 @@ kolada_handler <- R6Class("kolada_handler",
   )
 )
 
+#' @title Map Handler
+#' @description Handler class for map plotting
+#' @field shapefile_data A data frame containing shapefile data
+#' @field shapefile_path The file path to the shapefile
+#' @export
+
 map_handler <- R6Class("map_handler",
                        public = list(
                          shapefile_data = NULL,
                          shapefile_path = NULL,
-                        
+                         
+                       #' @description
+                       #' Method that loads the shape file responsible for plotting the map
+                       #' @param path File location of shape file
+                       #' @return Loaded shape file
                        load_shapefile = function(path){
                          return(st_read(path))
                        },
-                         
+                       
+                       #' @description
+                       #' Constructor function for map handler
+                       
                        initialize = function(){
                          self$shapefile_path = "../Advanced-Programming-R-Lab-5/resources/shapefiles/alla_kommuner.shp"
                          self$shapefile_data = self$load_shapefile(self$shapefile_path)
                        },
                        
+                       #' @description
+                       #' Merges shape file data with KPI data retrieved from Kolada
+                       #' @param kolada_data Data frame that contains the data from Kolada
+                       #' @return Data frame that contains both the shape and KPI data
                        merge_data = function(kolada_data){
-                         merged_data <- shapefile_data %>%
+                         merged_data <- self$shapefile_data %>%
                            inner_join(kolada_data, by = c("ID" = "municipality"))
                        },
                        
+                       #' @description
+                       #' Plots a map of the KPI data including tooltip
+                       #' @param merged_data Dataframe that contains both shape data and KPI data
+                       #' @param title title for plot
+                        
                        plot_data = function(merged_data, title){
                          p <- ggplot(data = merged_data) +
                            geom_sf(aes(fill = value, text = paste("Municipality: ", KOM_NAMN, "<br>", "Value: ", value))) +
@@ -105,18 +132,3 @@ map_handler <- R6Class("map_handler",
   )
 )
 
-
-# Example usage
-api_handler = kolada_handler$new()
-map_handler = map_handler$new()
-kolada_data = api_handler$get_kpi("N00923") # life expectancy data
-
-if (class(kolada_data) == "list") {
-  kolada_data <- as.data.frame(kolada_data)
-}
-
-kolada_data$value <- sapply(kolada_data$values, function(x) x$value)
-
-merged_data = map_handler$merge_data(kolada_data = kolada_data)
-map_handler$plot_data(merged_data, "Life expectancy for men")
-View(merged_data)
