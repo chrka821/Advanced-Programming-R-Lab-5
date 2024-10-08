@@ -15,7 +15,9 @@ Requires:
 Depends:
   httr,
   jsonlite,
-  R6
+  R6,
+  sf,
+  dplyr
 Suggests: 
     testthat (>= 3.0.0),
     devtools

@@ -1,8 +1,8 @@
 #' @importFrom httr GET content
 #' @importFrom jsonlite fromJSON
 #' @importFrom R6 R6Class
-
-
+#' @importFrom sf st_read
+#' @importFrom dplyr inner_join
 kolada_handler <- R6Class("kolada_handler",
                        public = list(
                        
@@ -50,10 +50,74 @@ kolada_handler <- R6Class("kolada_handler",
                          response <- GET(paste0(endpoint, municipality_id))
                          data = self$parse_response(response)
                          return(data)
+                       },
+                       
+                       parse_kpi = function(kpi_string){
+                         endpoint = "http://api.kolada.se/v2/kpi?title="
+                         response <- GET(paste0(endpoint, kpi_string))
+                         data = self$parse_response(response)
+                         return(data)
+                       },
+                       
+                       get_kpi = function(kpi_id){
+                         endpoint = "http://api.kolada.se/v2/data/kpi/"
+                         print(paste0(endpoint, kpi_id))
+                         response <- GET(paste0(endpoint, kpi_id, "/year/2023"))
+                         data = self$parse_response(response)
+                         return(data$values)
                        }
   )
 )
 
+map_handler <- R6Class("map_handler",
+                       public = list(
+                         shapefile_data = NULL,
+                         shapefile_path = NULL,
+                        
+                       load_shapefile = function(path){
+                         return(st_read(path))
+                       },
+                         
+                       initialize = function(){
+                         self$shapefile_path = "../Advanced-Programming-R-Lab-5/resources/shapefiles/alla_kommuner.shp"
+                         self$shapefile_data = self$load_shapefile(self$shapefile_path)
+                       },
+                       
+                       merge_data = function(kolada_data){
+                         merged_data <- shapefile_data %>%
+                           inner_join(kolada_data, by = c("ID" = "municipality"))
+                       },
+                       
+                       plot_data = function(merged_data){
+                         p <- ggplot(data = merged_data) +
+                           geom_sf(aes(fill = value)) +
+                           scale_fill_viridis_c() +
+                           theme_minimal() +
+                           ggtitle("Random Data Plot for Swedish Counties")
+                         print(p)
+                       }
+                       
+                       
+                       
+                       
+  )
+)
 
+
+# Example usage
 api_handler = kolada_handler$new()
-print(api_handler$parse_municipality("Köping"))
+map_handler = map_handler$new()
+kolada_data = api_handler$get_kpi("N00923") # life expectancy data
+
+if (class(kolada_data) == "list") {
+  kolada_data <- as.data.frame(kolada_data)
+}
+
+kolada_data$value <- sapply(kolada_data$values, function(x) x$value)
+
+
+View(kolada_data)
+
+
+merged_data = map_handler$merge_data(kolada_data = kolada_data)
+map_handler$plot_data(merged_data)
