@@ -115,9 +115,5 @@ if (class(kolada_data) == "list") {
 
 kolada_data$value <- sapply(kolada_data$values, function(x) x$value)
 
-
-View(kolada_data)
-
-
 merged_data = map_handler$merge_data(kolada_data = kolada_data)
 map_handler$plot_data(merged_data)
