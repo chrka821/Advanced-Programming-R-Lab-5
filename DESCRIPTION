@@ -17,7 +17,9 @@ Depends:
   jsonlite,
   R6,
   sf,
-  dplyr
+  dplyr,
+  ggplot,
+  plotly
 Suggests: 
     testthat (>= 3.0.0),
     devtools

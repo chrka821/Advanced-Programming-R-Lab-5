@@ -3,6 +3,7 @@
 #' @importFrom R6 R6Class
 #' @importFrom sf st_read
 #' @importFrom dplyr inner_join
+#' @importFrom plotly ggplotly
 kolada_handler <- R6Class("kolada_handler",
                        public = list(
                        
@@ -88,13 +89,14 @@ map_handler <- R6Class("map_handler",
                            inner_join(kolada_data, by = c("ID" = "municipality"))
                        },
                        
-                       plot_data = function(merged_data){
+                       plot_data = function(merged_data, title){
                          p <- ggplot(data = merged_data) +
-                           geom_sf(aes(fill = value)) +
+                           geom_sf(aes(fill = value, text = paste("Municipality: ", KOM_NAMN, "<br>", "Value: ", value))) +
                            scale_fill_viridis_c() +
                            theme_minimal() +
-                           ggtitle("Random Data Plot for Swedish Counties")
-                         print(p)
+                           ggtitle(title)
+                         p_interactive <- ggplotly(p, tooltip = "text")
+                         print(p_interactive)
                        }
                        
                        
@@ -116,4 +118,5 @@ if (class(kolada_data) == "list") {
 kolada_data$value <- sapply(kolada_data$values, function(x) x$value)
 
 merged_data = map_handler$merge_data(kolada_data = kolada_data)
-map_handler$plot_data(merged_data)
+map_handler$plot_data(merged_data, "Life expectancy for men")
+View(merged_data)
