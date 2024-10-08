@@ -12,13 +12,13 @@ Encoding: UTF-8
 RoxygenNote: 7.3.2
 Requires:
   R >= 3.5.0
-Depends:
+Imports:
   httr,
   jsonlite,
   R6,
   sf,
   dplyr,
-  ggplot,
+  ggplot2,
   plotly
 Suggests: 
     testthat (>= 3.0.0),
