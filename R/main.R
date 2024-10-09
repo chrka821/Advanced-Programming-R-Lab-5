@@ -1,11 +1,18 @@
+library(httr)
+library(jsonlite)
+library(R6)
+library(sf)
+library(dplyr)
+library(plotly)
+library(ggplot2)
+
 #' @importFrom httr GET content
 #' @importFrom jsonlite fromJSON
 #' @importFrom R6 R6Class
 #' @importFrom sf st_read
-#' @importFrom dplyr inner_join
+#' @importFrom dplyr inner_join %>%
 #' @importFrom plotly ggplotly
-#' @importFrom ggplot2 ggplot
-
+#' @importFrom ggplot2 ggplot geom_sf aes scale_fill_viridis_c theme_minimal ggtitle
 #' @title Kolada Handler
 #' @description An R6 class to handle data retrieval from Kolada API
 #' @export
