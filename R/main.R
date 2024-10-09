@@ -105,7 +105,7 @@ map_handler <- R6Class("map_handler",
                        #' Constructor function for map handler
                        
                        initialize = function(){
-                         self$shapefile_path = "../Advanced-Programming-R-Lab-5/resources/shapefiles/alla_kommuner.shp"
+                         self$shapefile_path = "resources/shapefiles/alla_kommuner.shp"
                          self$shapefile_data = self$load_shapefile(self$shapefile_path)
                        },
                        
