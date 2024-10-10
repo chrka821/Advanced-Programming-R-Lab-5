@@ -10,7 +10,7 @@ server <- function(input, output, session) {
   observeEvent(input$nav_overview, { current_page("Overview") })
   observeEvent(input$nav_analysis, { current_page("Additional Analysis") })
   
-  # Helper function to format the 'values' column
+  # Helper function to format the values, prints values by gender
   format_values <- function(val_list) {
     if (is.data.frame(val_list) && all(c("gender", "value") %in% colnames(val_list))) {
       formatted_values <- sapply(1:nrow(val_list), function(i) {
