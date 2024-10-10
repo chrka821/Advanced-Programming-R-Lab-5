@@ -1,5 +1,3 @@
-# ui.R
-
 library(shiny)
 library(bslib)
 library(DT)
@@ -19,7 +17,13 @@ ui <- page_sidebar(
   theme = custom_theme,
   titlePanel(div("Data Exploration of Municipalities", style = "text-align: center;")),
   
-  
+  # Custom CSS for white outline on the action button
+  tags$style(HTML("
+    .btn-primary {
+      border: 2px solid white;  /* Add a white outline */
+      color: white;  /* Button text color */
+    }
+  ")),
   
   sidebar = sidebar(
     bg = "#0a4275",  # Navy-blue background for the sidebar
@@ -30,14 +34,26 @@ ui <- page_sidebar(
     actionButton("nav_analysis", "Additional Analysis", icon = icon("chart-line"), class = "btn-light"),
     hr(),
     h3("Filters", style = "color: #ffffff;"),
-    selectInput("municipality", "Select Municipality:", choices = NULL),
-    actionButton("update", "Update Data", class = "btn-primary")
     
+    # KPI Search Input
+    textInput("kpi_search", "Search KPI:", placeholder = "Enter KPI to search"),
+    
+    # Year selection for KPI
+    selectInput("kpi_year", "Select Year for KPI:", choices = 2015:2023),
+    
+    hr(),
+    
+    # Municipality Search Input with autocomplete
+    selectizeInput("municipality_search", "Select Municipality:", choices = c(" " = "", municipality_choices), 
+                   options = list(placeholder = "Start typing to filter")),
+    
+    # Year selection for Municipality
+    selectInput("municipality_year", "Select Year for Municipality:", choices = 2015:2023),
+    
+    actionButton("update", "Update Data", class = "btn-primary")
   ),
   
   # Main content area
-  
-    h4(""),
-    uiOutput("content")
-  
+  h4(""),
+  uiOutput("content")
 )

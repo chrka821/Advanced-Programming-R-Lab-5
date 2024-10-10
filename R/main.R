@@ -1,11 +1,3 @@
-library(httr)
-library(jsonlite)
-library(R6)
-library(sf)
-library(dplyr)
-library(plotly)
-library(ggplot2)
-
 #' @importFrom httr GET content
 #' @importFrom jsonlite fromJSON
 #' @importFrom R6 R6Class
@@ -16,6 +8,15 @@ library(ggplot2)
 #' @title Kolada Handler
 #' @description An R6 class to handle data retrieval from Kolada API
 #' @export
+
+library(here)
+library(R6)
+library(httr)
+library(sf)
+library(plotly)
+library(ggplot2)
+library(jsonlite)
+
 kolada_handler <- R6Class("kolada_handler",
                        public = list(
                        initialize = function(){
@@ -70,15 +71,34 @@ kolada_handler <- R6Class("kolada_handler",
                        },
                        
                        #' @description
-                       #' Takes a KPI ID and queries Kolada for it
+                       #' Takes a list of KPI IDs and queries Kolada for it
                        #' @param kpi_id KPI ID as used by Kolada
-                       get_kpi = function(kpi_id){
+                       get_kpis = function(kpi_ids){
                          endpoint = "http://api.kolada.se/v2/data/kpi/"
-                         print(paste0(endpoint, kpi_id))
-                         response <- GET(paste0(endpoint, kpi_id, "/year/2023"))
+                         response <- GET(paste0(endpoint, kpi_ids, "/year/2023"))
                          data = self$parse_response(response)
                          return(data$values)
+                       },
+                       
+                       #' @description
+                       #' 
+                       #' @param kpi_ids list of KPIs to be fetched (can also be a single KPI)
+                       #' @param municipality_id for what municipality this data is supposed to be fetched, 
+                       #' if not specified it fetches the data for every municipality
+                       #' @param year Year for which the data is supposed to be fetched
+                       #' @return dataframe containing the fetched data
+                       #' 
+                       get_data = function(kpi_ids, municipality_id, year){
+                         endpoint = "http://api.kolada.se/v2/data"
+                         kpi_ids_string = paste(kpi_ids, collapse = ",")
+                         endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string, "/municipality/", municipality_id, "/year/", year)
+                         response <- GET(endpoint_query)
+                         print(endpoint_query)
+                         data = self$parse_response(response)
+                         print(data)
+                         return(data$values)
                        }
+
   )
 )
 
@@ -105,7 +125,7 @@ map_handler <- R6Class("map_handler",
                        #' Constructor function for map handler
                        
                        initialize = function(){
-                         self$shapefile_path = "resources/shapefiles/alla_kommuner.shp"
+                         self$shapefile_path = here("resources/shapefiles/alla_kommuner.shp")
                          self$shapefile_data = self$load_shapefile(self$shapefile_path)
                        },
                        
@@ -133,9 +153,8 @@ map_handler <- R6Class("map_handler",
                          print(p_interactive)
                        }
                        
-                       
-                       
-                       
   )
 )
 
+api_handler = kolada_handler$new()
+print(api_handler$parse_kpi("Mediannettoinkomst"))
