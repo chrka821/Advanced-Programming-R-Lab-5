@@ -156,5 +156,3 @@ map_handler <- R6Class("map_handler",
   )
 )
 
-api_handler = kolada_handler$new()
-print(api_handler$parse_kpi("Mediannettoinkomst"))

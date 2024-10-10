@@ -1,23 +1,22 @@
-source("R/main.R")
+# Create a data frame with the selected KPIs and their IDs
+kpi_df <- data.frame(
+  Indicator_English = c(
+    "Unemployment Rate", "Carbon Dioxide Emissions per Capita", "Reported Crimes per 100k Inhabitants",
+    "High School Graduation Rate", "Average Age", "Refugees / Job seeking migrants per 1000 Inhabitants",
+    "Median income after tax, age 20 and above", "Survey: Would you recommend moving here? (%)"
+  ),
+  Indicator_ID = c(
+    "N03920", "N00401", "N07540", "N18605", "N00959", "N01993", "N00905", "U60002"
+  )
+)
+write.csv(kpi_df, "resources/default_kpis.csv")
 
-#' @importFrom httr GET content
-#' @importFrom jsonlite fromJSON
-#' @importFrom R6 R6Class
-#' @importFrom sf st_read
-#' @importFrom dplyr inner_join
-#' @importFrom plotly ggplotly
-#' @importFrom ggplot2 ggplot
 
-## Example usage
-api_handler = kolada_handler$new()
-map_handler = map_handler$new()
-kolada_data = api_handler$get_kpi("N00923") # life expectancy data
-
-if (class(kolada_data) == "list") {
-  kolada_data <- as.data.frame(kolada_data)
+get_data = function(kpi_ids, municipality_id, year){
+  endpoint = "http://api.kolada.se/v2/data"
+  kpi_ids_string = paste(kpi_ids, collapse = ",")
+  endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string, "/municipality/", municipality_id, "/year/", year)
+  print(endpoint_query)
 }
 
-kolada_data$value <- sapply(kolada_data$values, function(x) x$value)
-
-merged_data = map_handler$merge_data(kolada_data = kolada_data)
-map_handler$plot_data(merged_data, "Life expectancy for men")
+get_data(c(kpi_df$Indicator_ID), "0114", "2015")
