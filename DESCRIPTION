@@ -10,6 +10,7 @@ Description: This package uses the Kolada API to access data regarding Swedish m
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.2
+Roxygen: list(markdown = TRUE, roclets = c("namespace", "rd"), load = "source")
 Requires:
   R >= 3.5.0
 Imports:
@@ -19,7 +20,9 @@ Imports:
   sf,
   dplyr,
   ggplot2,
-  plotly
+  plotly,
+  shiny,
+  here
 Suggests: 
     testthat (>= 3.0.0),
     devtools

@@ -17,7 +17,7 @@ library(plotly)
 library(ggplot2)
 library(jsonlite)
 
-kolada_handler <- R6Class("kolada_handler",
+KoladaHandler <- R6Class("kolada_handler",
                        public = list(
                        initialize = function(){
                          
@@ -64,9 +64,11 @@ kolada_handler <- R6Class("kolada_handler",
                        #' @param kpi_string Search query for desired KPI
                        #' @return list of KPIs that include the KPI ID
                        parse_kpi = function(kpi_string){
+                         print(paste("hey", kpi_string))
                          endpoint = "http://api.kolada.se/v2/kpi?title="
                          response <- GET(paste0(endpoint, kpi_string))
                          data = self$parse_response(response)
+                         print(data)
                          return(data)
                        },
                        
@@ -81,23 +83,34 @@ kolada_handler <- R6Class("kolada_handler",
                        },
                        
                        #' @description
-                       #' 
+                       #' Get data fetches a list of KPis for a municipalitry
                        #' @param kpi_ids list of KPIs to be fetched (can also be a single KPI)
                        #' @param municipality_id for what municipality this data is supposed to be fetched, 
-                       #' if not specified it fetches the data for every municipality
                        #' @param year Year for which the data is supposed to be fetched
                        #' @return dataframe containing the fetched data
                        #' 
-                       get_data = function(kpi_ids, municipality_id, year){
+                       get_data = function(kpi_ids, municipality_ids = NULL, year) {
                          endpoint = "http://api.kolada.se/v2/data"
                          kpi_ids_string = paste(kpi_ids, collapse = ",")
-                         endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string, "/municipality/", municipality_id, "/year/", year)
+                         
+                         # Create the base endpoint query with the KPI IDs and year
+                         endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string, "/year/", year)
+                         
+                         # If municipality_ids are provided, add them to the query
+                         if (!is.null(municipality_ids) && length(municipality_ids) > 0) {
+                           municipality_ids_string = paste(municipality_ids, collapse = ",")
+                           endpoint_query = paste0(endpoint_query, "/municipality/", municipality_ids_string)
+                         }
+                         
+                         # Make the GET request to the constructed endpoint
                          response <- GET(endpoint_query)
-                         print(endpoint_query)
+                         print(endpoint_query)  # For debugging purposes
                          data = self$parse_response(response)
-                         print(data)
+                         print(data)  # For debugging purposes
+                         View(data$values)
                          return(data$values)
                        }
+                       
 
   )
 )
@@ -108,51 +121,59 @@ kolada_handler <- R6Class("kolada_handler",
 #' @field shapefile_path The file path to the shapefile
 #' @export
 
-map_handler <- R6Class("map_handler",
+MapHandler <- R6Class("map_handler",
                        public = list(
                          shapefile_data = NULL,
                          shapefile_path = NULL,
                          
-                       #' @description
-                       #' Method that loads the shape file responsible for plotting the map
-                       #' @param path File location of shape file
-                       #' @return Loaded shape file
-                       load_shapefile = function(path){
-                         return(st_read(path))
-                       },
+                         #' @description
+                         #' Method that loads the shape file responsible for plotting the map
+                         #' @param path File location of shape file
+                         #' @return Loaded shape file
+                         load_shapefile = function(path){
+                           return(st_read(path))
+                         },
+                         
+                         #' @description
+                         #' Constructor function for map handler
+                         
+                         initialize = function(){
+                           self$shapefile_path = here("resources/shapefiles/alla_kommuner.shp")
+                           self$shapefile_data = self$load_shapefile(self$shapefile_path)
+                         },
+                         
+                         #' @description
+                         #' Merges shape file data with KPI data retrieved from Kolada
+                         #' @param kolada_data Data frame that contains the data from Kolada
+                         #' @return Data frame that contains both the shape and KPI data
+                         merge_data = function(kolada_data){
+                           merged_data <- self$shapefile_data %>%
+                             inner_join(kolada_data, by = c("ID" = "municipality"))
+                         },
+                         
+                         #' @description
+                         #' Plots a map of the KPI data including tooltip
+                         #' @param merged_data Dataframe that contains both shape data and KPI data
+                         #' @param title Title for the plot
+                         plot_data = function(merged_data = NULL, title = "Map") {
+                           if (is.null(merged_data)) {
+                             # If no data is available, create an empty plot with grey fill for the polygons
+                             p <- ggplot() +
+                               geom_sf(data = self$shapefile_data, fill = "grey", color = "black") +
+                               theme_minimal() +
+                               ggtitle(title)
+                             print(p)
+                           } else {
+                             # Original plotting functionality when data is available
+                             p <- ggplot(data = merged_data) +
+                               geom_sf(aes(fill = value), color = "black") +
+                               scale_fill_viridis_c() +
+                               theme_minimal() +
+                               ggtitle(title)
+                             print(p)
+                           }
+                         }
                        
-                       #' @description
-                       #' Constructor function for map handler
-                       
-                       initialize = function(){
-                         self$shapefile_path = here("resources/shapefiles/alla_kommuner.shp")
-                         self$shapefile_data = self$load_shapefile(self$shapefile_path)
-                       },
-                       
-                       #' @description
-                       #' Merges shape file data with KPI data retrieved from Kolada
-                       #' @param kolada_data Data frame that contains the data from Kolada
-                       #' @return Data frame that contains both the shape and KPI data
-                       merge_data = function(kolada_data){
-                         merged_data <- self$shapefile_data %>%
-                           inner_join(kolada_data, by = c("ID" = "municipality"))
-                       },
-                       
-                       #' @description
-                       #' Plots a map of the KPI data including tooltip
-                       #' @param merged_data Dataframe that contains both shape data and KPI data
-                       #' @param title title for plot
-                        
-                       plot_data = function(merged_data, title){
-                         p <- ggplot(data = merged_data) +
-                           geom_sf(aes(fill = value, text = paste("Municipality: ", KOM_NAMN, "<br>", "Value: ", value))) +
-                           scale_fill_viridis_c() +
-                           theme_minimal() +
-                           ggtitle(title)
-                         p_interactive <- ggplotly(p, tooltip = "text")
-                         print(p_interactive)
-                       }
                        
   )
 )
-
