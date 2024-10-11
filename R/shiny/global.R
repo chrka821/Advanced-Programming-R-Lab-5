@@ -7,5 +7,9 @@ map_handler <- MapHandler$new()
 municipalities_df <- read.csv(here("resources/swedish_municipalities.csv"), 
                               stringsAsFactors = FALSE, 
                               colClasses = "character")
+
+# Drop down list for municipalities
 municipality_choices <- sort(municipalities_df$KOM_NAMN)
+
+# Default KPIs which get displayed when a municipality is searched for
 default_kpis <- read.csv(here("resources/default_kpis.csv"), stringsAsFactors = FALSE)

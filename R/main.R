@@ -30,33 +30,9 @@ KoladaHandler <- R6Class("kolada_handler",
                        
                        parse_response = function(response){
                          data <- content(response, as = "text")
-                         parsed_data = fromJSON(data)
-                         return (parsed_data)
-                       },
-                       
-                       #' @description
-                       #' Retrieves a list of available municipalities based on string input
-                       #' and presumably fuzzy string matching. 
-                       #' Response contains the id of the municipalities which are needed for further processing.
-                       #' @param municipality_str Search string for municipality
-                       #' @return list of municipalities with similar or equal name
-                       
-                       parse_municipality = function(municipality_str){
-                         endpoint = "http://api.kolada.se/v2/municipality?title="
-                         response <- GET(paste0(endpoint, municipality_str))
-                         data = self$parse_response(response)
-                         return (data)
-                       },
-                       
-                       #' @description
-                       #' Function that retrieves all information for a specific municipality
-                       #' @param municipality_id integer id as used by kolada and retrieved by parse_municipality method
-                       #' @return Information regarding municipality
-                       get_municipality = function(municipality_id){
-                         endpoint = "https://api.kolada.se/v2/data/municipality/"
-                         response <- GET(paste0(endpoint, municipality_id))
-                         data = self$parse_response(response)
-                         return(data)
+                         parsed_data <- fromJSON(data)$values
+                         parsed_data_df <- as.data.frame(parsed_data, stringsAsFactors = FALSE)
+                         return (parsed_data_df)
                        },
                        
                        #' @description
@@ -64,28 +40,19 @@ KoladaHandler <- R6Class("kolada_handler",
                        #' @param kpi_string Search query for desired KPI
                        #' @return list of KPIs that include the KPI ID
                        parse_kpi = function(kpi_string){
-                         print(paste("hey", kpi_string))
+                         kpi_string <- gsub(" ", "%", kpi_string) # url encode spaces
                          endpoint = "http://api.kolada.se/v2/kpi?title="
                          response <- GET(paste0(endpoint, kpi_string))
                          data = self$parse_response(response)
-                         print(data)
                          return(data)
                        },
                        
-                       #' @description
-                       #' Takes a list of KPI IDs and queries Kolada for it
-                       #' @param kpi_id KPI ID as used by Kolada
-                       get_kpis = function(kpi_ids){
-                         endpoint = "http://api.kolada.se/v2/data/kpi/"
-                         response <- GET(paste0(endpoint, kpi_ids, "/year/2023"))
-                         data = self$parse_response(response)
-                         return(data$values)
-                       },
                        
                        #' @description
                        #' Get data fetches a list of KPis for a municipalitry
                        #' @param kpi_ids list of KPIs to be fetched (can also be a single KPI)
-                       #' @param municipality_id for what municipality this data is supposed to be fetched, 
+                       #' @param municipality_ids for what municipality this data is supposed to be fetched,
+                       #' if it is a list of length 0, it is fetched for all municipalities
                        #' @param year Year for which the data is supposed to be fetched
                        #' @return dataframe containing the fetched data
                        #' 
@@ -93,8 +60,8 @@ KoladaHandler <- R6Class("kolada_handler",
                          endpoint = "http://api.kolada.se/v2/data"
                          kpi_ids_string = paste(kpi_ids, collapse = ",")
                          
-                         # Create the base endpoint query with the KPI IDs and year
-                         endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string, "/year/", year)
+                         # Create the base endpoint query with the KPI IDs
+                         endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string)
                          
                          # If municipality_ids are provided, add them to the query
                          if (!is.null(municipality_ids) && length(municipality_ids) > 0) {
@@ -102,13 +69,11 @@ KoladaHandler <- R6Class("kolada_handler",
                            endpoint_query = paste0(endpoint_query, "/municipality/", municipality_ids_string)
                          }
                          
-                         # Make the GET request to the constructed endpoint
+                         endpoint_query = paste0(endpoint_query, "/year/", year)
                          response <- GET(endpoint_query)
-                         print(endpoint_query)  # For debugging purposes
                          data = self$parse_response(response)
-                         print(data)  # For debugging purposes
-                         View(data$values)
-                         return(data$values)
+                         View(data)
+                         return(data)
                        }
                        
 

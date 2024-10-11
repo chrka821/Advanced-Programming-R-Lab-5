@@ -25,12 +25,20 @@ server <- function(input, output, session) {
     }
   }
   
-  # Render an empty map initially
+  no_results_found_warning <- function(){
+    showNotification("No results found for the specified KPI.", type = "warning")
+    output$dataTable <- renderDT({
+      datatable(data.frame(title = character(), operating_area = character()), 
+                options = list(pageLength = 5))
+    })
+  }
+  
+  # Render an empty map on start up
   output$interactiveMap <- renderPlot({
-    map_handler$plot_data(title = "Empty Map")  # Call plot_data with an empty dataset
+    map_handler$plot_data(title = "Map of Sweden")  # Call plot_data with an empty dataset
   })
   
-  # Render an empty table initially
+  # Render an empty table on start up
   output$dataTable <- renderDT({
     datatable(data.frame(title = character(), operating_area = character()), 
               options = list(pageLength = 5))
@@ -42,16 +50,11 @@ server <- function(input, output, session) {
     kpi_year <- input$kpi_year
     
     if (kpi_search_term != "") {
-      # Call parse_kpi on the kolada_instance with the search term
+      # Call parse_kpi with search term to get list of possible KPIs
       kpi_result <- api_handler$parse_kpi(kpi_search_term)
-      
-      if (length(kpi_result$values) == 0) {
-        showNotification("No results found for the specified KPI.", type = "warning")
-        output$dataTable <- renderDT({
-          datatable(data.frame(title = character(), operating_area = character()), 
-                    options = list(pageLength = 5))
-        })
-        return() # Exit the handler if no data is found
+      if (length(kpi_result) == 0) { # No matching results, abort
+        no_results_found_warning()
+        return() # abort execution of handler function
       }
       
       # Convert kpi_result to a data frame if it is a list
@@ -59,19 +62,14 @@ server <- function(input, output, session) {
         kpi_result <- as.data.frame(kpi_result, stringsAsFactors = FALSE)
       }
       
-      
-      # Filter the KPI data to only include those with municipality_type "K" and select the required columns
+      # Filter the KPI data to only select Kommuns 
       filtered_kpi_result <- kpi_result %>%
-        filter(values.municipality_type == "K") %>%
-        select(values.title, values.operating_area, values.id)
+        filter(municipality_type == "K") %>%
+        select(title, operating_area, id)
       
-      # If no rows remain after filtering, show a warning and render an empty table
-      if (nrow(filtered_kpi_result) == 0) {
-        showNotification("No results found for municipality type 'K'.", type = "warning")
-        output$dataTable <- renderDT({
-          datatable(data.frame(title = character(), operating_area = character()), 
-                    options = list(pageLength = 5))
-        })
+      
+      if (nrow(filtered_kpi_result) == 0) { # Found matching results, but none for kommuns
+        no_results_found_warning()
         return()
       }
       
@@ -80,13 +78,13 @@ server <- function(input, output, session) {
         mutate(
           title_link = sprintf(
             '<a href="#" class="kpi-link" data-id="%s" style="color: blue; text-decoration: underline;">%s</a>',
-            values.id, values.title
+            id, title
           )
         )
       
-      # Render the filtered data in the data table
+      # Render the filtered KPIs in the data table
       output$dataTable <- renderDT({
-        datatable(filtered_kpi_result %>% select(title_link, values.operating_area), 
+        datatable(filtered_kpi_result %>% select(title_link, operating_area), 
                   options = list(pageLength = 5),
                   escape = FALSE,  # Allow HTML rendering for clickable links
                   colnames = c("Title", "Operating Area"))
@@ -106,7 +104,7 @@ server <- function(input, output, session) {
       # Get the selected year
       selected_year <- input$kpi_year
       
-      # Call the get_data function with the selected year, KPI ID, and empty municipality_ids
+      # Call the get_data function with the selected year, KPI ID, and empty list for municipality_ids
       kpi_data <- api_handler$get_data(kpi_ids = kpi_id, municipality_ids = list(), year = selected_year)
       # Check if the returned data is empty
       if (length(kpi_data$values) == 0) {
@@ -137,7 +135,7 @@ server <- function(input, output, session) {
     if (length(municipality_id) > 0 && selected_municipality != "") {
       kpi_ids <- default_kpis$Indicator_ID
       data_result <- api_handler$get_data(kpi_ids, municipality_id, selected_year)
-      
+      View(data_result)
       # Check if the data result is empty
       if (length(data_result) == 0) {
         showNotification("No data found for the selected municipality.", type = "warning")
