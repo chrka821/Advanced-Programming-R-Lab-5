@@ -1,31 +1,9 @@
-# Assuming kolada_handler and map_handler classes are defined and loaded elsewhere
 library(shiny)
 library(DT)
 library(dplyr)
 
 server <- function(input, output, session) {
-  # Helper function to format values for the data table
-  format_values <- function(val_list) {
-    if (is.data.frame(val_list) && all(c("gender", "value") %in% colnames(val_list))) {
-      formatted_values <- sapply(1:nrow(val_list), function(i) {
-        val <- val_list[i, ]
-        if (!is.null(val$gender) && !is.null(val$value)) {
-          switch(val$gender,
-                 "T" = paste("Total:", val$value),
-                 "K" = paste("Women:", val$value),
-                 "M" = paste("Men:", val$value),
-                 NULL)
-        } else {
-          NULL
-        }
-      })
-      paste(na.omit(formatted_values), collapse = ", ")
-    } else {
-      "No data available"
-    }
-  }
-  
-  no_results_found_warning <- function(){
+    no_results_found_warning <- function(){
     showNotification("No results found for the specified KPI.", type = "warning")
     output$dataTable <- renderDT({
       datatable(data.frame(title = character(), operating_area = character()), 
@@ -84,10 +62,10 @@ server <- function(input, output, session) {
       
       # Render the filtered KPIs in the data table
       output$dataTable <- renderDT({
-        datatable(filtered_kpi_result %>% select(title_link, operating_area), 
+        datatable(filtered_kpi_result %>% select(title_link, operating_area, id), 
                   options = list(pageLength = 5),
                   escape = FALSE,  # Allow HTML rendering for clickable links
-                  colnames = c("Title", "Operating Area"))
+                  colnames = c("Title", "Operating Area", "KPI"))
       })
     } else {
       showNotification("Please enter a valid KPI search term.", type = "error")
@@ -114,13 +92,10 @@ server <- function(input, output, session) {
       
       # Extract the KPI name for the title
       kpi_title <- sub('.*">(.*?)<.*', '\\1', info$value)
-      
-      # Process the KPI data
-      kpi_data$value <- sapply(kpi_data$values, function(x) x$value)
       merged_data <- map_handler$merge_data(kpi_data)
       
       # Update the map with the KPI title as the plot title
-      output$interactiveMap <- renderPlot({
+      output$interactiveMap <- renderPlotly({
         map_handler$plot_data(merged_data, title = kpi_title)
       })
     }
@@ -146,7 +121,7 @@ server <- function(input, output, session) {
         left_join(default_kpis, by = c("kpi" = "Indicator_ID")) %>%
         mutate(
           indicator = Indicator_English,
-          values = sapply(values, format_values)
+          values
         ) %>%
         select(indicator, municipality, period, values)
       

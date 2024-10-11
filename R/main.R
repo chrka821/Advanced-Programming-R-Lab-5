@@ -56,24 +56,40 @@ KoladaHandler <- R6Class("kolada_handler",
                        #' @param year Year for which the data is supposed to be fetched
                        #' @return dataframe containing the fetched data
                        #' 
-                       get_data = function(kpi_ids, municipality_ids = NULL, year) {
+                       get_data = function(kpi_ids, municipality_ids, year) {
                          endpoint = "http://api.kolada.se/v2/data"
                          kpi_ids_string = paste(kpi_ids, collapse = ",")
                          
-                         # Create the base endpoint query with the KPI IDs
+                        
                          endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string)
+                         print(municipality_ids)
+                         print(length(municipality_ids))
                          
-                         # If municipality_ids are provided, add them to the query
-                         if (!is.null(municipality_ids) && length(municipality_ids) > 0) {
+                         if (length(municipality_ids) > 0) {
                            municipality_ids_string = paste(municipality_ids, collapse = ",")
                            endpoint_query = paste0(endpoint_query, "/municipality/", municipality_ids_string)
                          }
                          
                          endpoint_query = paste0(endpoint_query, "/year/", year)
+                         print(endpoint_query)
                          response <- GET(endpoint_query)
-                         data = self$parse_response(response)
-                         View(data)
-                         return(data)
+                         parsed_data = self$parse_response(response)
+                        
+                         # Extract the "T" aka total value from the values column
+                         parsed_data$values <- lapply(parsed_data$values, function(value_list) {
+                           if (is.data.frame(value_list) && "gender" %in% colnames(value_list)) {
+                             # Get the row where gender is "T" (Total)
+                             t_value_row <- value_list[value_list$gender == "T", "value"]
+                             if (length(t_value_row) == 0) {
+                               return(NA)  # If "T" is not found, return NA
+                             } else {
+                               return(t_value_row)
+                             }
+                           } else {
+                             return(NA)  # If the values column is not in the expected format, return NA
+                           }
+                         })
+                         return(parsed_data)
                        }
                        
 
@@ -129,12 +145,13 @@ MapHandler <- R6Class("map_handler",
                                ggtitle(title)
                              print(p)
                            } else {
-                             # Original plotting functionality when data is available
+                             merged_data$values <- as.numeric(merged_data$values) # convert non numeric characters
                              p <- ggplot(data = merged_data) +
-                               geom_sf(aes(fill = value), color = "black") +
-                               scale_fill_viridis_c() +
+                               geom_sf(aes(fill = values, text = paste("Municipality: ", KOM_NAMN, "<br>", "Value: ", values))) +
+                               scale_fill_viridis_c(na.value = "grey") + # Set a color for NA values
                                theme_minimal() +
                                ggtitle(title)
+                             p <- ggplotly(p, tooltip = "text")
                              print(p)
                            }
                          }
@@ -142,3 +159,4 @@ MapHandler <- R6Class("map_handler",
                        
   )
 )
+

@@ -61,7 +61,7 @@ ui <- page_sidebar(
   tags$div(
     class = "content-wrapper",
     h4("Map"),
-    plotOutput("interactiveMap"),
+    plotlyOutput("interactiveMap"),
     br(),
     h4("Data Table"),
     DTOutput("dataTable")
