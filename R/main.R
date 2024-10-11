@@ -9,14 +9,6 @@
 #' @description An R6 class to handle data retrieval from Kolada API
 #' @export
 
-library(here)
-library(R6)
-library(httr)
-library(sf)
-library(plotly)
-library(ggplot2)
-library(jsonlite)
-
 KoladaHandler <- R6Class("kolada_handler",
                        public = list(
                        initialize = function(){
@@ -41,10 +33,15 @@ KoladaHandler <- R6Class("kolada_handler",
                        #' @return list of KPIs that include the KPI ID
                        parse_kpi = function(kpi_string){
                          kpi_string <- gsub(" ", "%", kpi_string) # url encode spaces
-                         endpoint = "http://api.kolada.se/v2/kpi?title="
+                         endpoint <- "http://api.kolada.se/v2/kpi?title="
                          response <- GET(paste0(endpoint, kpi_string))
-                         data = self$parse_response(response)
+                         data <- self$parse_response(response)
+                         
+                         if (nrow(data) > 0){
+                         data <- filter(data, municipality_type == "K") # Filter for only kommuns
+                         }
                          return(data)
+                         
                        },
                        
                        
@@ -59,36 +56,33 @@ KoladaHandler <- R6Class("kolada_handler",
                        get_data = function(kpi_ids, municipality_ids, year) {
                          endpoint = "http://api.kolada.se/v2/data"
                          kpi_ids_string = paste(kpi_ids, collapse = ",")
-                         
-                        
                          endpoint_query = paste0(endpoint, "/kpi/", kpi_ids_string)
-                         print(municipality_ids)
-                         print(length(municipality_ids))
-                         
+      
                          if (length(municipality_ids) > 0) {
                            municipality_ids_string = paste(municipality_ids, collapse = ",")
                            endpoint_query = paste0(endpoint_query, "/municipality/", municipality_ids_string)
                          }
                          
                          endpoint_query = paste0(endpoint_query, "/year/", year)
-                         print(endpoint_query)
                          response <- GET(endpoint_query)
                          parsed_data = self$parse_response(response)
-                        
-                         # Extract the "T" aka total value from the values column
-                         parsed_data$values <- lapply(parsed_data$values, function(value_list) {
-                           if (is.data.frame(value_list) && "gender" %in% colnames(value_list)) {
-                             # Get the row where gender is "T" (Total)
-                             t_value_row <- value_list[value_list$gender == "T", "value"]
-                             if (length(t_value_row) == 0) {
-                               return(NA)  # If "T" is not found, return NA
+                         if(nrow(parsed_data) > 0){
+                           # Extract the "T" aka total value from the values column
+                           parsed_data$value <- lapply(parsed_data$values, function(value_list) {
+                             if (is.data.frame(value_list) && "gender" %in% colnames(value_list)) {
+                               # Get the row where gender is "T" (Total)
+                               t_value_row <- value_list[value_list$gender == "T", "value"]
+                               if (length(t_value_row) == 0) {
+                                 return(NA)  # If "T" is not found, return NA
+                               } else {
+                                 return(t_value_row)
+                               }
                              } else {
-                               return(t_value_row)
+                               return(NA)  # If the values column is not in the expected format, return NA
                              }
-                           } else {
-                             return(NA)  # If the values column is not in the expected format, return NA
-                           }
-                         })
+                           })
+                           parsed_data <- subset(parsed_data, select=c("kpi", "municipality", "period", "value"))
+                         }
                          return(parsed_data)
                        }
                        
@@ -132,31 +126,49 @@ MapHandler <- R6Class("map_handler",
                              inner_join(kolada_data, by = c("ID" = "municipality"))
                          },
                          
+                         
+                         
                          #' @description
                          #' Plots a map of the KPI data including tooltip
                          #' @param merged_data Dataframe that contains both shape data and KPI data
                          #' @param title Title for the plot
-                         plot_data = function(merged_data = NULL, title = "Map") {
-                           if (is.null(merged_data)) {
-                             # If no data is available, create an empty plot with grey fill for the polygons
-                             p <- ggplot() +
-                               geom_sf(data = self$shapefile_data, fill = "grey", color = "black") +
-                               theme_minimal() +
-                               ggtitle(title)
-                             print(p)
-                           } else {
-                             merged_data$values <- as.numeric(merged_data$values) # convert non numeric characters
+                         plot_data = function(merged_data = NULL, title = "Map") {                             merged_data$value <- as.numeric(merged_data$value) # convert non numeric characters
                              p <- ggplot(data = merged_data) +
-                               geom_sf(aes(fill = values, text = paste("Municipality: ", KOM_NAMN, "<br>", "Value: ", values))) +
+                               geom_sf(aes(fill = value, text = paste("Municipality: ", KOM_NAMN, "<br>", "Value: ", value))) +
                                scale_fill_viridis_c(na.value = "grey") + # Set a color for NA values
                                theme_minimal() +
                                ggtitle(title)
                              p <- ggplotly(p, tooltip = "text")
                              print(p)
-                           }
+                         },
+                         
+                         highlight_municipality = function(municipality_name, municipality_id) {
+                           
+                           # Create a copy of the shapefile data to avoid altering the original
+                           shapefile_copy <- self$shapefile_data %>%
+                             mutate(highlight = ifelse(ID == municipality_id, "red", "grey"))
+                           
+                           # Plot the map
+                          p <- ggplot() +
+                             geom_sf(data = shapefile_copy, aes(fill = highlight), color = "black") +
+                             scale_fill_identity() +
+                             theme_minimal() +
+                             ggtitle(municipality_name)
+                          print(p)
+                         },
+                         
+                         empty_map = function(){
+                           p <- ggplot() +
+                             geom_sf(data = self$shapefile_data, fill = "grey", color = "black") +
+                             theme_minimal() +
+                             ggtitle("Map of Sweden")
+                           print(p)
                          }
+                         
                        
+)
                        
   )
-)
 
+api_handler = KoladaHandler$new()
+api_handler$parse_kpi("mäasasn")
