@@ -1,0 +1,105 @@
+---
+title: "Using Kolada API with the lab5 Package"
+author: "Christian Kammerer, Victor Guillo"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using Kolada API with the lab5 Package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+library(here)
+library(plotly)
+```
+
+
+
+# Introduction
+The `lab5` package allows users to access data related to Swedish municipalities via the Kolada API. It includes functionality for data retrieval and visualization using R6 classes and integrates well with a Shiny application for interactive analysis. This vignette shows how to use the `KoladaHandler` and `MapHandler` classes in the package to fetch and visualize data.
+
+## 1. KoladaHandler Class
+
+The `KoladaHandler` class is responsible for communicating with the Kolada API and retrieving the relevant data.
+
+### Creating a KoladaHandler Object
+```{r}
+library(lab5)
+
+# Create a KoladaHandler instance
+api_handler <- KoladaHandler$new()
+```
+
+
+```{r}
+# Search for a KPI
+kpi_data <- api_handler$parse_kpi("Carbon Dioxide Emissions per Capita")
+head(kpi_data)
+
+```
+
+
+```{r}
+# Fetch KPI data for specific KPI IDs and municipalities
+kpi_ids <- c("N00401")
+municipality_ids <- c("0180", "0123") # Stockholm and another municipality
+year <- 2020
+
+kpi_result <- api_handler$get_data(kpi_ids, municipality_ids, year)
+head(kpi_result)
+
+```
+
+```{r}
+# Create a MapHandler instance
+map_handler <- MapHandler$new()
+
+```
+
+```{r}
+# Merge the KPI data with shapefile data
+merged_data <- map_handler$merge_data(kpi_result)
+
+# Plot the data on the map
+map_handler$plot_data(merged_data, title = "KPI Map: Carbon Dioxide Emissions")
+
+```
+
+
+```{r}
+library(shiny)
+library(lab5)
+
+ui <- fluidPage(
+  titlePanel("Municipality KPI Explorer"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("kpi", "Select KPI:", choices = c("Carbon Dioxide Emissions per Capita" = "N00401")),
+      numericInput("year", "Select Year:", value = 2020, min = 2000, max = 2024),
+      actionButton("update", "Update Map")
+    ),
+    mainPanel(
+      plotlyOutput("kpi_map")
+    )
+  )
+)
+
+server <- function(input, output) {
+  api_handler <- KoladaHandler$new()
+  map_handler <- MapHandler$new()
+  
+  observeEvent(input$update, {
+    kpi_data <- api_handler$get_data(input$kpi, municipality_ids = c("0180", "0123"), input$year)
+    merged_data <- map_handler$merge_data(kpi_data)
+    
+    output$kpi_map <- renderPlotly({
+      map_handler$plot_data(merged_data, title = "KPI Map: Carbon Dioxide Emissions")
+    })
+  })
+}
+
+shinyApp(ui, server)
+
+```
+

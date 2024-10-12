@@ -25,5 +25,8 @@ Imports:
   here
 Suggests: 
     testthat (>= 3.0.0),
-    devtools
+    devtools,
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
+VignetteBuilder: knitr
