@@ -64,7 +64,7 @@ server <- function(input, output, session) {
     output$dataTable <- renderDT({
       datatable(
         processed_data, 
-        options = list(pageLength = 5), 
+        options = list(pageLength = 10), 
         colnames = c("KPI", "Value")
       )
     })
@@ -73,7 +73,7 @@ server <- function(input, output, session) {
   # ------------------ KPI Map Update (Page 2) ------------------
   
   # Update the map based on selected KPI and year when "Update Map" button is clicked
-  # Handle KPI Selection for the Gradient Map (Page 2)
+ 
   observeEvent(input$update_map, {
     selected_kpi <- input$kpi_search
     selected_year <- input$kpi_year
@@ -102,14 +102,18 @@ server <- function(input, output, session) {
       
       # Update the map with gradient based on KPI values
       output$interactiveMap <- renderPlotly({
-        ggplot(municipality_map_data) +
+     
+        p <- ggplot(municipality_map_data) +
           geom_sf(aes(fill = value, text = paste("Municipality: ", KOM_NAMN, "<br>", "Value: ", round(value, 2)))) +  # Rounded values
           scale_fill_gradient(low = "lightblue", high = "darkblue", na.value = "grey") +
           theme_minimal() +
           ggtitle(paste("Map of", selected_kpi, "for year", selected_year))
+        
+        ggplotly(p, tooltip = "text")
       })
       
-      # Display the national mean under the map
+      
+      
       output$nationalMean <- renderText({
         paste("National Mean for", selected_kpi, "in", selected_year, ":", round(national_mean, 2))
       })

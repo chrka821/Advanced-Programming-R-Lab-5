@@ -1,5 +1,36 @@
 ui <- navbarPage("Data Exploration of Municipalities",
                  
+                 tags$head(
+                   tags$style(HTML("
+                     .navbar {
+                       background-color: #0066CC;  
+                     }
+                     .navbar-default .navbar-brand {
+                       color: #FFD700;  
+                     }
+                     .navbar-default .navbar-nav > li > a {
+                       color: #FFD700;  
+                     }
+                     .navbar-default .navbar-brand:hover,
+                     .navbar-default .navbar-nav > li > a:hover {
+                       color: #FFFF00;  
+                     }
+                     body {
+                       background-color: #ECECEC;  
+                     }
+                     h3 {
+                       color: #0066CC;  
+                     }
+                     .btn-primary {
+                       background-color: #0066CC;  
+                       color: #FFD700;  
+                       border-color: #0066CC;
+                     }
+                     .btn-primary:hover {
+                       background-color: #0055A3;  
+                     }
+                   "))
+                 ),
                  # First tab: Municipality Data Table
                  tabPanel("Municipality Data",
                           sidebarLayout(
@@ -24,11 +55,11 @@ ui <- navbarPage("Data Exploration of Municipalities",
                               selectizeInput("kpi_search", "Search KPI:", choices = kpi_choices, 
                                              options = list(placeholder = "Start typing KPI")),
                               selectInput("kpi_year", "Select Year for KPI", choices = 2015:2023),
-                              actionButton("update_map", "Update Map", class = "btn-primary")  # Add the button to update the map
+                              actionButton("update_map", "Update Map", class = "btn-primary")  
                             ),
                             mainPanel(
                               plotlyOutput("interactiveMap"),
-                              textOutput("nationalMean")  # Add this to display the national mean
+                              textOutput("nationalMean")  
                             )
                           )
                  )
