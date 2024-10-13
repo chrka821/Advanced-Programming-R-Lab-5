@@ -4,7 +4,7 @@ api_handler <- KoladaHandler$new()
 map_handler <- MapHandler$new()
 
 # Reading list of all swedish municipalities from disk
-municipalities_df <- read.csv(here("resources/swedish_municipalities.csv"), 
+municipalities_df <- read.csv(here("/resources/swedish_municipalities.csv"), 
                               stringsAsFactors = FALSE, 
                               colClasses = "character")
 
@@ -12,7 +12,7 @@ municipalities_df <- read.csv(here("resources/swedish_municipalities.csv"),
 municipality_choices <- sort(municipalities_df$KOM_NAMN)
 
 # Default KPIs which get displayed when a municipality is searched for
-default_kpis <- read.csv(here("resources/default_kpis.csv"), stringsAsFactors = FALSE)
+default_kpis <- read.csv(here("inst/resources/default_kpis.csv"), stringsAsFactors = FALSE)
 
 # Assuming 'default_kpis' is the dataframe holding KPI data with columns 'Indicator_ID' and 'Indicator_English'
 kpi_choices <- unique(default_kpis$Indicator_English)  # Extract unique KPI names

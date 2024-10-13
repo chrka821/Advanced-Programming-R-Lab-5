@@ -67,39 +67,4 @@ map_handler$plot_data(merged_data, title = "KPI Map: Carbon Dioxide Emissions")
 ```
 
 
-```{r}
-library(shiny)
-library(lab5)
-
-ui <- fluidPage(
-  titlePanel("Municipality KPI Explorer"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("kpi", "Select KPI:", choices = c("Carbon Dioxide Emissions per Capita" = "N00401")),
-      numericInput("year", "Select Year:", value = 2020, min = 2000, max = 2024),
-      actionButton("update", "Update Map")
-    ),
-    mainPanel(
-      plotlyOutput("kpi_map")
-    )
-  )
-)
-
-server <- function(input, output) {
-  api_handler <- KoladaHandler$new()
-  map_handler <- MapHandler$new()
-  
-  observeEvent(input$update, {
-    kpi_data <- api_handler$get_data(input$kpi, municipality_ids = c("0180", "0123"), input$year)
-    merged_data <- map_handler$merge_data(kpi_data)
-    
-    output$kpi_map <- renderPlotly({
-      map_handler$plot_data(merged_data, title = "KPI Map: Carbon Dioxide Emissions")
-    })
-  })
-}
-
-shinyApp(ui, server)
-
-```
 

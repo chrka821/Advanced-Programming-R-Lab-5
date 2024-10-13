@@ -113,7 +113,7 @@ MapHandler <- R6Class("map_handler",
                         #' Constructor function for map handler
                         
                         initialize = function(){
-                          self$shapefile_path = here("resources/shapefiles/alla_kommuner.shp")
+                          self$shapefile_path = here("inst/resources/shapefiles/alla_kommuner.shp")
                           self$shapefile_data = self$load_shapefile(self$shapefile_path)
                         },
                         
@@ -169,6 +169,3 @@ MapHandler <- R6Class("map_handler",
                       )
                       
 )
-
-api_handler = KoladaHandler$new()
-api_handler$parse_kpi("mäasasn")

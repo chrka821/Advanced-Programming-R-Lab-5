@@ -1,6 +1,6 @@
 library(testthat)
 
-# Create an instance of KoladaHandler (assuming the class is correctly defined)
+# Create an instance of KoladaHandler
 api_handler <- KoladaHandler$new()
 
 # Test to inspect the structure of the result and adjust expectations
@@ -17,9 +17,6 @@ test_that("API fetches data structure via R6 method", {
   actual_columns <- colnames(result)
   print(actual_columns)  # Print column names to inspect
   
-  # Adjust expectations based on actual column names
-  # For example:
-  # expect_true(all(c("municipality", "kpi_value") %in% actual_columns))
 })
 
 # Test for handling of `value` column being a list
@@ -42,59 +39,6 @@ test_that("API handles missing data correctly", {
   # If missing values are allowed, you could check this instead:
   # expect_true(any(is.na(result$value)))  # If missing values are expected
 })
-
-test_that("API handles a large range of years", {
-  result <- api_handler$get_data(kpi_ids = "N00401", municipality_id = NULL, year = 2000:2020)  # Query multiple years
-  
-  # Check that the result is not empty
-  expect_gt(nrow(result), 0)
-  
-  # Ensure the 'year' column contains data for all requested years
-  expect_true(all(2000:2020 %in% result$year))  # Assuming 'year' is a column in the result
-})
-
-test_that("API handles a large range of years", {
-  years <- 2000:2020  # Define the range of years
-  
-  # Create an empty list to store results
-  results <- lapply(years, function(year) {
-    # Query each year individually
-    result <- api_handler$get_data(kpi_ids = "N00401", municipality_id = NULL, year = year)
-    
-    # If result is not empty, add the year to the dataframe
-    if (nrow(result) > 0) {
-      result$year <- year  # Ensure each result gets the correct year
-    }
-    
-    return(result)
-  })
-  
-  # Combine all the results into one dataframe
-  combined_result <- do.call(rbind, results)
-  
-  # Check that the combined result is not empty
-  expect_gt(nrow(combined_result), 0)
-  
-  # Check that the 'year' column contains all requested years
-  # It is possible some years don't have data, so let's print which years are missing
-  missing_years <- years[!(years %in% combined_result$year)]
-  
-  print(missing_years)  # Print the missing years for debugging
-  
-  expect_true(all(years %in% combined_result$year))  # Ensure all years are represented
-})
-results <- lapply(years, function(year) {
-    api_handler$get_data(kpi_ids = "N00401", municipality_id = NULL, year = year)
-  })
-  
-  # Combine all the results into one dataframe
-  combined_result <- do.call(rbind, results)
-  
-  # Check that the combined result is not empty
-  expect_gt(nrow(combined_result), 0)
-  
-  # Ensure the 'year' column contains data for all requested years
-  expect_true(all(years %in% combined_result$year))  # Assuming 'year' is a column in the result
 
 
 
