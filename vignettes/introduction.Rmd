@@ -26,18 +26,22 @@ The `KoladaHandler` class is responsible for communicating with the Kolada API a
 ### Creating a KoladaHandler Object
 ```{r}
 library(lab5)
-
-# Create a KoladaHandler instance
-api_handler <- KoladaHandler$new()
 ```
 
 
 ```{r}
-# Search for a KPI
-kpi_data <- api_handler$parse_kpi("Carbon Dioxide Emissions per Capita")
-head(kpi_data)
+# Initialize the KoladaHandler object
+api_handler <- KoladaHandler$new()
 
+# Check the available methods in KoladaHandler
+print(api_handler)
 ```
+```{r}
+#Search for KPI
+head(default_kpis)
+```
+
+
 
 
 ```{r}

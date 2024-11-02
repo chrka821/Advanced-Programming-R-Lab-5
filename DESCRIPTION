@@ -22,7 +22,8 @@ Imports:
   ggplot2,
   plotly,
   shiny,
-  here
+  here,
+  DT
 Suggests: 
     testthat (>= 3.0.0),
     devtools,
